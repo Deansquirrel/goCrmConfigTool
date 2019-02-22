@@ -6,12 +6,5 @@ logLevel="debug"
 
 #转换字典
 [templateValue]
-keyList=["Appid"]
-valueList=["xxxxxxxxxxxxxxxxxxxxxx"]
-
-#转换配置
-[tranConfig]
-#配置样式 模板文件夹|模板文件名|输出文件夹|输出文件名
-#如：02_CRMdz|Web.config|02_CRMdz|Web.config
-# 说明：模板存放文件夹Template，输出文件夹Out
-configList=["02_CRMdz|Web.config|02_CRMdz|Web.config"]
+keyList=["A","B"]
+valueList=["A2","B2"]

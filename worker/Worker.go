@@ -15,7 +15,7 @@ const (
 	TemplateFolderName  = "Template"
 	OutFolderName       = "Out"
 	TemplateFolderSplit = "###"
-	ReplactFlag         = "###"
+	ReplaceFlag         = "###"
 )
 
 type Worker struct {
@@ -28,7 +28,6 @@ func (w *Worker) Tran() {
 		log.Error("检查配置时遇到异常：" + err.Error())
 		return
 	}
-
 	//==================================================================================================================
 	tranConfigList := make([]*object.TranConfig, 0)
 	for _, config := range global.SysConfig.TranConfigs.ConfigList {
@@ -45,19 +44,20 @@ func (w *Worker) Tran() {
 	if err != nil {
 		log.Error("获取转换配置时遇到错误：" + err.Error())
 	} else {
+		log.Debug("转换配置:")
 		for _, tc := range tcList {
-			log.Debug(tc.TemplateFolder + " | " + tc.TemplateFileName + " | " + tc.OutFolder + " | " + tc.OutFilename)
+			log.Debug("[" + tc.TemplateFolder + " | " + tc.TemplateFileName + " | " + tc.OutFolder + " | " + tc.OutFilename + "]")
 		}
 	}
 	//==================================================================================================================
 
 	kMap := GetTemplateValue(&global.SysConfig.TemplateValue)
-	log.Info("转换内容列表：")
+	log.Info("转换内容：")
 	for key, val := range kMap {
 		log.Info(key + " - " + val)
 	}
-	for _, config := range tranConfigList {
-		err = w.TranFile(config, kMap)
+	for _, config := range tcList {
+		err = w.TranFile(&config, kMap)
 		if err != nil {
 			log.Error("转换文件时发生错误：" + err.Error())
 			return
@@ -84,6 +84,7 @@ func (w *Worker) getTranConfigList() ([]object.TranConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Debug("文件列表：")
 	for _, tc := range tcList {
 		b, err := json.Marshal(tc)
 		if err != nil {
@@ -92,7 +93,7 @@ func (w *Worker) getTranConfigList() ([]object.TranConfig, error) {
 			log.Debug(string(b))
 		}
 	}
-	return nil, nil
+	return tcList, nil
 }
 
 //按路径生成配置文件列表并返回文件夹
@@ -140,19 +141,25 @@ func (w *Worker) TranFile(config *object.TranConfig, kMap map[string]string) err
 	if err != nil {
 		return err
 	}
+	log.Info("模板路径：" + tPath)
 	oPath, err := w.getOutFullPath(config.OutFolder, config.OutFilename)
 	if err != nil {
 		return err
 	}
+	log.Info("输出路径：" + oPath)
 	data, err := w.getFileDate(tPath)
 	if err != nil {
 		return err
 	}
 	sData := string(data)
 	for k, v := range kMap {
-		sData = strings.Replace(sData, "###"+k+"###", v, -1)
+		sData = strings.Replace(sData, ReplaceFlag+k+ReplaceFlag, v, -1)
 	}
-	return w.writeOutFile(oPath, []byte(sData))
+	err = w.writeOutFile(oPath, []byte(sData))
+	if err == nil {
+		log.Info("Complete")
+	}
+	return err
 }
 
 //获取模板文件路径
@@ -161,22 +168,8 @@ func (w *Worker) getTemplateFullPath(folder string, file string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	folder = goToolCommon.CheckAndDeleteFirstChar(folder, "\\")
-	folder = goToolCommon.CheckAndDeleteLastChar(folder, "\\")
-	return cPath + "\\" + "Template" + "\\" + folder + "\\" + file, nil
-}
-
-//获取模板文件路径
-func (w *Worker) getTemplateFullPath2(folder string, file string) (string, error) {
-	cPath, err := goToolCommon.GetCurrPath()
-	if err != nil {
-		return "", err
-	}
-	return cPath + "\\" + TemplateFolderName + "\\" + strings.Replace(folder, TemplateFolderSplit, "\\", -1) + file, nil
-}
-
-//获取输出文件路径
-func (w *Worker) getOutFullPath2(folder string, file string) (string, error) {
+	return cPath + "\\" + TemplateFolderName + "\\" +
+		strings.Replace(folder, TemplateFolderSplit, "\\", -1) + "\\" + file, nil
 }
 
 //获取输出文件路径
@@ -185,19 +178,24 @@ func (w *Worker) getOutFullPath(folder string, file string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	folder = goToolCommon.CheckAndDeleteFirstChar(folder, "\\")
-	folder = goToolCommon.CheckAndDeleteLastChar(folder, "\\")
+	folderList := strings.Split(folder, TemplateFolderSplit)
 
-	err = goToolCommon.CheckAndCreateFolder(cPath + "\\" + "Out")
+	folderT := cPath + "\\" + OutFolderName
+	err = goToolCommon.CheckAndCreateFolder(folderT)
 	if err != nil {
 		return "", err
 	}
-
-	err = goToolCommon.CheckAndCreateFolder(cPath + "\\" + "Out" + "\\" + folder)
-	if err != nil {
-		return "", err
+	for i := 0; i < len(folderList); i++ {
+		if folderList[i] == "" {
+			continue
+		}
+		folderT = folderT + "\\" + folderList[i]
+		err = goToolCommon.CheckAndCreateFolder(folderT)
+		if err != nil {
+			return "", err
+		}
 	}
-	return cPath + "\\" + "Out" + "\\" + folder + "\\" + file, nil
+	return folderT + "\\" + file, nil
 }
 
 //读取模板文件数据

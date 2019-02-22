@@ -1,10 +1,13 @@
 package common
 
 import (
+	"bytes"
 	"github.com/BurntSushi/toml"
 	"github.com/Deansquirrel/goCrmConfigTool/config"
 	"github.com/Deansquirrel/goToolCommon"
 	log "github.com/Deansquirrel/goToolLog"
+	"io"
+	"os"
 )
 
 //获取配置
@@ -23,7 +26,25 @@ func GetSysConfig(fileName string) (*config.SysConfig, error) {
 		log.Info("未发现配置文件,使用默认配置" + ";filePath:" + fileFullPath)
 		c = config.SysConfig{}
 	} else {
-		_, err = toml.DecodeFile(fileFullPath, &c)
+		configFile, err := os.Open(fileFullPath)
+		defer func() {
+			_ = configFile.Close()
+		}()
+		if err != nil {
+			return nil, err
+		}
+		buf := make([]byte, 3)
+		_, err = io.ReadFull(configFile, buf)
+		if err != nil {
+			return nil, err
+		}
+		if bytes.Equal(buf, []byte{0xEF, 0xBB, 0xBF}) == false {
+			_, err = configFile.Seek(0, 0)
+			if err != nil {
+				return nil, err
+			}
+		}
+		_, err = toml.DecodeReader(configFile, &c)
 		if err != nil {
 			return nil, err
 		}

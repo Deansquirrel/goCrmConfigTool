@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/Deansquirrel/goCrmConfigTool/common"
 	"github.com/Deansquirrel/goCrmConfigTool/global"
 	"github.com/Deansquirrel/goCrmConfigTool/worker"
@@ -20,7 +19,6 @@ func main() {
 	//==================================================================================================================
 	config, err := common.GetSysConfig("config.toml")
 	if err != nil {
-		fmt.Println(err.Error())
 		log.Error("加载配置文件时遇到错误：" + err.Error())
 		return
 	}
