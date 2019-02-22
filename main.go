@@ -12,6 +12,12 @@ import (
 
 func main() {
 	//==================================================================================================================
+	log.StdOut = true
+	log.Level = log.LevelInfo
+	log.Info("程序启动")
+	defer log.Info("程序退出")
+	//==================================================================================================================
+	//==================================================================================================================
 	config, err := common.GetSysConfig("config.toml")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -21,13 +27,6 @@ func main() {
 	config.FormatConfig()
 	global.SysConfig = config
 	//==================================================================================================================
-	c, err := json.Marshal(global.SysConfig)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println(string(c))
-	}
-	//==================================================================================================================
 	err = common.RefreshSysConfig(*global.SysConfig)
 	if err != nil {
 		log.Error("刷新配置时遇到错误：" + err.Error())
@@ -35,8 +34,14 @@ func main() {
 	}
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 	//==================================================================================================================
-	log.Info("程序启动")
-	defer log.Info("程序退出")
+	log.Info("Version " + global.Version)
+	//==================================================================================================================
+	c, err := json.Marshal(global.SysConfig)
+	if err != nil {
+		log.Info("显示设置时遇到错误：" + err.Error())
+	} else {
+		log.Info("设置：" + string(c))
+	}
 	//==================================================================================================================
 	w := worker.Worker{}
 	w.Tran()

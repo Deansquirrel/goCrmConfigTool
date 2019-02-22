@@ -11,8 +11,6 @@ type TranConfig struct {
 	TemplateFileName string
 	OutFolder        string
 	OutFilename      string
-	TranKeyList      string
-	TranValList      string
 }
 
 func NewTranConfig(config string) (*TranConfig, error) {
